@@ -27,6 +27,25 @@ spec:
           from: {{ . }}
       {{- end }}
     {{- if .Values.experimental.kubernetesGateway.certificate }}
+    {{- if gt (len .Values.ports.websecure.tls.domains) 0 }}
+    {{- $root := . }}
+    {{- range $index, $domain := .Values.ports.websecure.tls.domains }}
+    - name: websecure-{{ $index }}
+      hostname: {{ $domain.main }}
+      port: {{ $.Values.ports.websecure.port }}
+      protocol: HTTPS
+      {{- with $root.Values.experimental.kubernetesGateway.namespacePolicy }}
+      allowedRoutes:
+        namespaces:
+          from: {{ . }}
+      {{- end }}
+      tls:
+        certificateRefs:
+          - name: {{ $.Values.experimental.kubernetesGateway.certificate.name }}
+            group: {{ $.Values.experimental.kubernetesGateway.certificate.group }}
+            kind: {{ $.Values.experimental.kubernetesGateway.certificate.kind }}
+    {{- end }}
+    {{- else }}
     - name: websecure
       port: {{ $.Values.ports.websecure.port }}
       protocol: HTTPS
@@ -37,8 +56,9 @@ spec:
       {{- end }}
       tls:
         certificateRefs:
-          - name: {{ .Values.experimental.kubernetesGateway.certificate.name }}
-            group: {{ .Values.experimental.kubernetesGateway.certificate.group }}
-            kind: {{ .Values.experimental.kubernetesGateway.certificate.kind }}
+          - name: {{ $.Values.experimental.kubernetesGateway.certificate.name }}
+            group: {{ $.Values.experimental.kubernetesGateway.certificate.group }}
+            kind: {{ $.Values.experimental.kubernetesGateway.certificate.kind }}
+    {{- end }}
     {{- end }}
 {{- end }}
